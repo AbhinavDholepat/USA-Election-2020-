@@ -23,7 +23,7 @@ setwd("")
  
 Data <- read_excel("Presidential Election.xlsx")   
  
-Polls <- read_excel("President Polls.xlsx")
+Polls <- read_excel("Polls.xlsx")
 Polls <- Polls %>% 
   select(1:11) 
 
