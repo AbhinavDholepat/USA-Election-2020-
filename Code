@@ -1,0 +1,2019 @@
+library(HistData)
+library(broom)
+library(Lahman)
+library(tidyverse)
+library(gridExtra)
+library(dslabs)
+library(ggplot2) 
+library(dplyr)
+library(readxl)
+library(rafalib)
+library(lubridate) 
+library(reshape2) 
+library(lpSolve) 
+library(ggrepel)
+library(ggthemes)
+library(gtools)
+library(latticeExtra)
+library(writexl)
+library(maps) 
+library(usmap)
+
+setwd("")
+ 
+Data <- read_excel("Presidential Election.xlsx")   
+ 
+Polls <- read_excel("President Polls.xlsx")
+Polls <- Polls %>% 
+  select(1:11) 
+
+Polls <- Polls %>% drop_na(question_id)
+Polls$state[is.na(Polls$state)] <- "USA" 
+
+only_biden <- Polls %>% 
+  filter(answer == "Biden")
+
+only_trump <- Polls %>% 
+  filter(answer == "Trump")
+
+names(only_biden)[names(only_biden) == "pct"] <- "Biden"
+names(only_trump)[names(only_trump) == "pct"] <- "Trump"
+
+
+just_trump <- only_trump %>% 
+  select(c("question_id", "Trump"))
+
+Input <- left_join(only_biden, just_trump)
+
+
+Input <- Input %>% 
+mutate(bp = Biden/100,
+       tp = Trump/100,
+       s = bp - tp,
+       p = ((s + 1) / 2))
+
+Input <- Input %>% 
+filter(end_date > "2020-10-20" )
+
+Input <- Input %>% 
+group_by(pollster_rating_name) %>% 
+filter(n() >= 2)
+
+
+### Filtering out Intividual States Polling 
+       
+
+AL <- subset(Input, state == "Alabama") 
+AK <- subset(Input, state == "Alaska") 
+AZ <- subset(Input, state == "Arizona") 
+AR <- subset(Input, state == "Arkansas") 
+CA <- subset(Input, state == "California") 
+CO <- subset(Input, state == "Colorado") 
+CT <- subset(Input, state == "Connecticut") 
+DE <- subset(Input, state == "Delaware") 
+FL <- subset(Input, state == "Florida") 
+GA <- subset(Input, state == "Georgia") 
+HI <- subset(Input, state == "Hawaii") 
+ID <- subset(Input, state == "Idaho") 
+IL <- subset(Input, state == "Illinois") 
+IN <- subset(Input, state == "Indiana")
+IA <- subset(Input, state == "Iowa") 
+KS <- subset(Input, state == "Kansas") 
+KY <- subset(Input, state == "Kentucky") 
+LA <- subset(Input, state == "Louisiana") 
+ME <- subset(Input, state == "Maine") 
+MD <- subset(Input, state == "Maryland") 
+MA <- subset(Input, state == "Massachusetts") 
+MI <- subset(Input, state == "Michigan") 
+MN <- subset(Input, state == "Minnesota") 
+MS <- subset(Input, state == "Mississippi") 
+MO <- subset(Input, state == "Missouri") 
+MT <- subset(Input, state == "Montana") 
+NE <- subset(Input, state == "Nebraska") 
+NV <- subset(Input, state == "Nevada") 
+NH <- subset(Input, state == "New Hampshire")
+NJ <- subset(Input, state == "New Jersey")
+NM  <- subset(Input, state == "New Mexico")
+NY <- subset(Input, state == "New York")
+NC <- subset(Input, state == "North Carolina")
+ND <- subset(Input, state == "North Dakota")
+OH <- subset(Input, state == "Ohio")
+OK <- subset(Input, state == "Oklahoma")
+OR <- subset(Input, state == "Oregon")
+PA <- subset(Input, state == "Pennsylvania")
+RI <- subset(Input, state == "Rhode Island")
+SC <- subset(Input, state == "South Carolina")
+SD <- subset(Input, state == "South Dakota")
+TN <- subset(Input, state == "Tennessee")
+TX <- subset(Input, state == "Texas")
+UT <- subset(Input, state == "Utah")
+VT <- subset(Input, state == "Vermont")
+VA <- subset(Input, state == "Virginia")
+WA <- subset(Input, state == "Washington")
+WV <- subset(Input, state == "West Virginia")
+WI <- subset(Input, state == "Wisconsin")
+WY <- subset(Input, state == "Wyoming")
+DC_POLL <- subset(Input, state == "District of Columbia")
+USA_POLL <- subset(Input, state == "USA")
+
+### Finding mean of spread in Polls consider all polls two weeks before the election as one 
+Alabama_avg <- mean(AL$s)
+Alaska_avg <- mean(AK$s)
+Arizona_avg <- mean(AZ$s)
+Arkansas_avg <- mean(AR$s)
+California_avg <- mean(CA$s)
+Colorado_avg <- mean(CO$s)
+Connecticut_avg <- mean(CT$s)
+Delaware_avg <- mean(DE$s)
+Florida_avg <- mean(FL$s)
+Georgia_avg <- mean(GA$s)
+Hawaii_avg <- mean(HI$s)
+Idaho_avg <- mean(ID$s)
+Illinois_avg <- mean(IL$s)
+Indiana_avg <- mean(IN$s)
+Iowa_avg <- mean(IA$s)
+Kansas_avg <- mean(KS$s)
+Kentucky_avg <- mean(KY$s)
+Louisiana_avg <- mean(LA$s)
+Maine_avg <- mean(MA$s)
+Maryland_avg <- mean(MD$s)
+Massachusetts_avg <- mean(MA$s)
+Michigan_avg <- mean(MI$s)
+Minnesota_avg <- mean(MN$s)
+Mississippi_avg <- mean(MS$s)
+Missouri_avg <- mean(MO$s)
+Montana_avg <- mean(MT$s)
+Nebraska_avg <- mean(NE$s)
+Nevada_avg <- mean(NV$s)
+New_Hampshire_avg <- mean(NH$s)
+New_Jersey_avg <- mean(NJ$s)
+New_Mexico_avg <- mean(NM$s)
+New_York_avg <- mean(NY$s)
+North_Carolina_avg <- mean(NC$s)
+North_Dakota_avg <- mean(ND$s)
+Ohio_avg <- mean(OH$s)
+Oklahoma_avg <- mean(OK$s)
+Oregon_avg <- mean(OR$s)
+Pennsylvania_avg <- mean(PA$s)
+Rhode_Island_avg <- mean(RI$s)
+South_Carolina_avg <- mean(SC$s)
+South_Dakota_avg <- mean(SD$s)
+Tennessee_avg <- mean(TN$s)
+Texas_avg <- mean(TX$s)
+Utah_avg <- mean(UT$s)
+Vermont_avg <- mean(VT$s)
+Virginia_avg <- mean(VA$s)
+Washington_avg <- mean(WA$s)
+West_Virginia_avg <- mean(WV$s)
+Wisconsin_avg <- mean(WI$s)
+Wyoming_avg <- mean(WY$s)
+DC_avg <- mean(DC_POLL$s)
+USA_avg <- mean(USA_POLL$s)
+
+
+### Finding p for each state 
+Alabama_p <- mean(AL$p)
+Alaska_p <- mean(AK$p)
+Arizona_p <- mean(AZ$p)
+Arkansas_p <- mean(AR$p)
+California_p <- mean(CA$p)
+Colorado_p <- mean(CO$p)
+Connecticut_p <- mean(CT$p)
+Delaware_p <- mean(DE$p)
+Florida_p <- mean(FL$p)
+Georgia_p <- mean(GA$p)
+Hawaii_p <- mean(HI$p)
+Idaho_p <- mean(ID$p)
+Illinois_p <- mean(IL$p)
+Indiana_p <- mean(IN$p)
+Iowa_p <- mean(IA$p)
+Kansas_p <- mean(KS$p)
+Kentucky_p <- mean(KY$p)
+Louisiana_p <- mean(LA$p)
+Maine_p <- mean(MA$p)
+Maryland_p <- mean(MD$p)
+Massachusetts_p <- mean(MA$p)
+Michigan_p <- mean(MI$p)
+Minnesota_p <- mean(MN$p)
+Mississippi_p <- mean(MS$p)
+Missouri_p <- mean(MO$p)
+Montana_p <- mean(MT$p)
+Nebraska_p <- mean(NE$p)
+Nevada_p <- mean(NV$p)
+New_Hampshire_p <- mean(NH$p)
+New_Jersey_p <- mean(NJ$p)
+New_Mexico_p <- mean(NM$p)
+New_York_p <- mean(NY$p)
+North_Carolina_p <- mean(NC$p)
+North_Dakota_p <- mean(ND$p)
+Ohio_p <- mean(OH$p)
+Oklahoma_p <- mean(OK$p)
+Oregon_p <- mean(OR$p)
+Pennsylvania_p <- mean(PA$p)
+Rhode_Island_p <- mean(RI$p)
+South_Carolina_p <- mean(SC$p)
+South_Dakota_p <- mean(SD$p)
+Tennessee_p <- mean(TN$p)
+Texas_p <- mean(TX$p)
+Utah_p <- mean(UT$p)
+Vermont_p <- mean(VT$p)
+Virginia_p <- mean(VA$p)
+Washington_p <- mean(WA$p)
+West_Virginia_p <- mean(WV$p)
+Wisconsin_p <- mean(WI$p)
+Wyoming_p <- mean(WY$p)
+DC_p <- mean(DC_POLL$p)
+USA_p <- mean(USA_POLL$p)
+
+### Using P value to find the standard error of each collection of polls
+
+Alabama_sd <- sqrt(((Alabama_p)*(1 - Alabama_p)) / sum(AL$sample_size/2))
+Alaska_sd <- sqrt(((Alaska_p)*(1 - Alaska_p)) / sum(AK$sample_size/2))
+Arizona_sd <- sqrt(((Arizona_p)*(1 - Arizona_p)) / sum(AZ$sample_size/2))
+Arkansas_sd <- sqrt(((Arkansas_p)*(1 - Arkansas_p)) / sum(AR$sample_size/2))
+California_sd <- sqrt(((California_p)*(1 - California_p)) / sum(CA$sample_size/2))
+Colorado_sd <- sqrt(((Colorado_p)*(1 - Colorado_p)) / sum(CO$sample_size/2))
+Connecticut_sd <- sqrt(((Connecticut_p)*(1 - Connecticut_p)) / sum(CT$sample_size/2))
+Delaware_sd <- sqrt(((Delaware_p)*(1 - Delaware_p)) / sum(DE$sample_size/2))
+Florida_sd <- sqrt(((Florida_p)*(1 - Florida_p)) / sum(FL$sample_size/2))
+Georgia_sd <- sqrt(((Georgia_p)*(1 - Georgia_p)) / sum(GA$sample_size/2))
+Hawaii_sd <- sqrt(((Hawaii_p)*(1 - Hawaii_p)) / sum(HI$sample_size/2))
+Idaho_sd <- sqrt(((Idaho_p)*(1 - Idaho_p)) / sum(ID$sample_size/2))
+Illinois_sd <- sqrt(((Illinois_p)*(1 - Illinois_p)) / sum(IL$sample_size/2))
+Indiana_sd <- sqrt(((Indiana_p)*(1 - Indiana_p)) / sum(IN$sample_size/2))
+Iowa_sd <- sqrt(((Iowa_p)*(1 - Iowa_p)) / sum(IA$sample_size/2))
+Kansas_sd <- sqrt(((Kansas_p)*(1 - Kansas_p)) / sum(KS$sample_size/2))
+Kentucky_sd <- sqrt(((Kentucky_p)*(1 - Kentucky_p)) / sum(KY$sample_size/2))
+Louisiana_sd <- sqrt(((Louisiana_p)*(1 - Louisiana_p)) / sum(LA$sample_size/2))
+Maine_sd <- sqrt(((Maine_p)*(1 - Maine_p)) / sum(ME$sample_size/2))
+Maryland_sd <- sqrt(((Maryland_p)*(1 - Maryland_p)) / sum(MD$sample_size/2))
+Massachusetts_sd <- sqrt(((Massachusetts_p)*(1 - Massachusetts_p)) / sum(MA$sample_size/2))
+Michigan_sd <- sqrt(((Michigan_p)*(1 - Michigan_p)) / sum(MI$sample_size/2))
+Minnesota_sd <- sqrt(((Minnesota_p)*(1 - Minnesota_p)) / sum(MN$sample_size/2))
+Mississippi_sd <- sqrt(((Mississippi_p)*(1 - Mississippi_p)) / sum(MS$sample_size/2))
+Missouri_sd <- sqrt(((Missouri_p)*(1 - Missouri_p)) / sum(MO$sample_size/2))
+Montana_sd <- sqrt(((Montana_p)*(1 - Montana_p)) / sum(MT$sample_size/2))
+Nebraska_sd <- sqrt(((Nebraska_p)*(1 - Nebraska_p)) / sum(NE$sample_size/2))
+Nevada_sd <- sqrt(((Nevada_p)*(1 - Nevada_p)) / sum(NV$sample_size/2))
+New_Hampshire_sd <- sqrt(((New_Hampshire_p)*(1 - New_Hampshire_p)) / sum(NH$sample_size/2))
+New_Jersey_sd <- sqrt(((New_Jersey_p)*(1 - New_Jersey_p)) / sum(NJ$sample_size/2))
+New_Mexico_sd <- sqrt(((New_Mexico_p)*(1 - New_Mexico_p)) / sum(NM$sample_size/2))
+New_York_sd <- sqrt(((New_York_p)*(1 - New_York_p)) / sum(NY$sample_size/2))
+North_Carolina_sd <- sqrt(((North_Carolina_p)*(1 - North_Carolina_p)) / sum(NC$sample_size/2))
+North_Dakota_sd <- sqrt(((North_Dakota_p)*(1 - North_Dakota_p)) / sum(ND$sample_size/2))
+Ohio_sd <- sqrt(((Ohio_p)*(1 - Ohio_p)) / sum(OH$sample_size/2))
+Oklahoma_sd <- sqrt(((Oklahoma_p)*(1 - Oklahoma_p)) / sum(OK$sample_size/2))
+Oregon_sd <- sqrt(((Oregon_p)*(1 - Oregon_p)) / sum(OR$sample_size/2))
+Pennsylvania_sd <- sqrt(((Pennsylvania_p)*(1 - Pennsylvania_p)) / sum(PA$sample_size/2))
+Rhode_Island_sd <- sqrt(((Rhode_Island_p)*(1 - Rhode_Island_p)) / sum(RI$sample_size/2))
+South_Carolina_sd <- sqrt(((South_Carolina_p)*(1 - South_Carolina_p)) / sum(SC$sample_size/2))
+South_Dakota_sd <- sqrt(((South_Dakota_p)*(1 - South_Dakota_p)) / sum(SD$sample_size/2))
+Tennessee_sd <- sqrt(((Tennessee_p)*(1 - Tennessee_p)) / sum(TN$sample_size/2))
+Texas_sd <- sqrt(((Texas_p)*(1 - Texas_p)) / sum(TX$sample_size/2))
+Utah_sd <- sqrt(((Utah_p)*(1 - Utah_p)) / sum(UT$sample_size/2))
+Vermont_sd <- sqrt(((Vermont_p)*(1 - Vermont_p)) / sum(VT$sample_size/2))
+Virginia_sd <- sqrt(((Virginia_p)*(1 - Virginia_p)) / sum(VA$sample_size/2))
+Washington_sd <- sqrt(((Washington_p)*(1 - Washington_p)) / sum(WA$sample_size/2))
+West_Virginia_sd <- sqrt(((West_Virginia_p)*(1 - West_Virginia_p)) / sum(WV$sample_size/2))
+Wisconsin_sd <- sqrt(((Wisconsin_p)*(1 - Wisconsin_p)) / sum(WI$sample_size/2))
+Wyoming_sd <- sqrt(((Wyoming_p)*(1 - Wyoming_p)) / sum(WY$sample_size/2))
+DC_sd <- sqrt(((DC_p)*(1 - DC_p)) / sum(DC_POLL$sample_size/2))
+USA_sd <- sqrt(((USA_p)*(1 - USA_p)) / sum(1000000))
+
+
+
+
+
+Data$democrat <- as.character.numeric_version(gsub("%", "", Data$democrat))
+Data$republican <- as.character.numeric_version(gsub("%", "", Data$republican))
+Data$other1 <- as.character.numeric_version(gsub("%", "", Data$other1))
+Data$other2 <- as.character.numeric_version(gsub("%", "", Data$other2))
+
+
+Data$democrat <- as.numeric(Data$democrat)
+Data$republican <- as.numeric(Data$republican)
+Data$other1 <- as.numeric(Data$other1)
+Data$other2 <- as.numeric(Data$other2)
+
+### Data as a decimal and spread 
+
+Data <- Data %>% 
+mutate(dem = (democrat/100), 
+       rep = (republican/100), 
+       oth1 = (other1/100), 
+       oth2 = (other2/100))
+
+Data <- Data %>% 
+mutate(dem_rep = (dem - rep),
+       p = ((dem_rep + 1) / 2)) 
+
+### Sub Data Of Each State Historical vote spreads
+
+Alabama <- subset(Data, state_name == "Alabama") 
+Alaska <- subset(Data, state_name == "Alaska") 
+Arizona <- subset(Data, state_name == "Arizona") 
+Arkansas <- subset(Data, state_name == "Arkansas") 
+California <- subset(Data, state_name == "California") 
+Colorado <- subset(Data, state_name == "Colorado") 
+Connecticut <- subset(Data, state_name == "Connecticut") 
+Delaware <- subset(Data, state_name == "Delaware") 
+Florida <- subset(Data, state_name == "Florida") 
+Georgia <- subset(Data, state_name == "Georgia") 
+Hawaii <- subset(Data, state_name == "Hawaii") 
+Idaho <- subset(Data, state_name == "Idaho") 
+Illinois <- subset(Data, state_name == "Illinois") 
+Indiana <- subset(Data, state_name == "Indiana")
+Iowa <- subset(Data, state_name == "Iowa") 
+Kansas <- subset(Data, state_name == "Kansas") 
+Kentucky <- subset(Data, state_name == "Kentucky") 
+Louisiana <- subset(Data, state_name == "Louisiana") 
+Maine <- subset(Data, state_name == "Maine") 
+Maryland <- subset(Data, state_name == "Maryland") 
+Massachusetts <- subset(Data, state_name == "Massachusetts") 
+Michigan <- subset(Data, state_name == "Michigan") 
+Minnesota <- subset(Data, state_name == "Minnesota") 
+Mississippi <- subset(Data, state_name == "Mississippi") 
+Missouri <- subset(Data, state_name == "Missouri") 
+Montana <- subset(Data, state_name == "Montana") 
+Nebraska <- subset(Data, state_name == "Nebraska") 
+Nevada <- subset(Data, state_name == "Nevada") 
+New_Hampshire <- subset(Data, state_name == "New Hampshire")
+New_Jersey <- subset(Data, state_name == "New Jersey")
+New_Mexico <- subset(Data, state_name == "New Mexico")
+New_York <- subset(Data, state_name == "New York")
+North_Carolina <- subset(Data, state_name == "North Carolina")
+North_Dakota <- subset(Data, state_name == "North Dakota")
+Ohio <- subset(Data, state_name == "Ohio")
+Oklahoma <- subset(Data, state_name == "Oklahoma")
+Oregon <- subset(Data, state_name == "Oregon")
+Pennsylvania <- subset(Data, state_name == "Pennsylvania")
+Rhode_Island <- subset(Data, state_name == "Rhode Island")
+South_Carolina <- subset(Data, state_name == "South Carolina")
+South_Dakota <- subset(Data, state_name == "South Dakota")
+Tennessee <- subset(Data, state_name == "Tennessee")
+Texas <- subset(Data, state_name == "Texas")
+Utah <- subset(Data, state_name == "Utah")
+Vermont <- subset(Data, state_name == "Vermont")
+Virginia <- subset(Data, state_name == "Virginia")
+Washington <- subset(Data, state_name == "Washington")
+West_Virginia <- subset(Data, state_name == "West Virginia")
+Wisconsin <- subset(Data, state_name == "Wisconsin")
+Wyoming <- subset(Data, state_name == "Wyoming")
+DC <- subset(Data, state_name == "Wyoming")
+USA <- subset(Data, state_name == "USA") 
+
+### Mean Historical Spread Of All States 
+
+Alabama_mean <- mean(Alabama$dem_rep)
+Alaska_mean <- mean(Alaska$dem_rep)
+Arizona_mean <- mean(Arizona$dem_rep)
+Arkansas_mean <- mean(Arkansas$dem_rep)
+California_mean <- mean(California$dem_rep)
+Colorado_mean <- mean(Colorado$dem_rep)
+Connecticut_mean <- mean(Connecticut$dem_rep)
+Delaware_mean <- mean(Delaware$dem_rep)
+Florida_mean <- mean(Florida$dem_rep)
+Georgia_mean <- mean(Georgia$dem_rep)
+Hawaii_mean <- mean(Hawaii$dem_rep)
+Idaho_mean <- mean(Idaho$dem_rep)
+Illinois_mean <- mean(Illinois$dem_rep)
+Indiana_mean <- mean(Indiana$dem_rep)
+Iowa_mean <- mean(Iowa$dem_rep)
+Kansas_mean <- mean(Kansas$dem_rep)
+Kentucky_mean <- mean(Kentucky$dem_rep)
+Louisiana_mean <- mean(Louisiana$dem_rep)
+Maine_mean <- mean(Maine$dem_rep)
+Maryland_mean <- mean(Maryland$dem_rep)
+Massachusetts_mean <- mean(Massachusetts$dem_rep)
+Michigan_mean <- mean(Michigan$dem_rep)
+Minnesota_mean <- mean(Minnesota$dem_rep)
+Mississippi_mean <- mean(Mississippi$dem_rep)
+Missouri_mean <- mean(Missouri$dem_rep)
+Montana_mean <- mean(Montana$dem_rep)
+Nebraska_mean <- mean(Nebraska$dem_rep)
+Nevada_mean <- mean(Nevada$dem_rep)
+New_Hampshire_mean <- mean(New_Hampshire$dem_rep)
+New_Jersey_mean <- mean(New_Jersey$dem_rep)
+New_Mexico_mean <- mean(New_Mexico$dem_rep)
+New_York_mean <- mean(New_York$dem_rep)
+North_Carolina_mean <- mean(North_Carolina$dem_rep)
+North_Dakota_mean <- mean(North_Dakota$dem_rep)
+Ohio_mean <- mean(Ohio$dem_rep)
+Oklahoma_mean <- mean(Oklahoma$dem_rep)
+Oregon_mean <- mean(Oregon$dem_rep)
+Pennsylvania_mean <- mean(Pennsylvania$dem_rep)
+Rhode_Island_mean <- mean(Rhode_Island$dem_rep)
+South_Carolina_mean <- mean(South_Carolina$dem_rep)
+South_Dakota_mean <- mean(South_Dakota$dem_rep)
+Tennessee_mean <- mean(Tennessee$dem_rep)
+Texas_mean <- mean(Texas$dem_rep)
+Utah_mean <- mean(Utah$dem_rep)
+Vermont_mean <- mean(Vermont$dem_rep)
+Virginia_mean <- mean(Virginia$dem_rep)
+Washington_mean <- mean(Washington$dem_rep)
+West_Virginia_mean <- mean(West_Virginia$dem_rep)
+Wisconsin_mean <- mean(Wisconsin$dem_rep)
+Wyoming_mean <- mean(Wyoming$dem_rep)
+DC_mean <- mean(DC$dem_rep)
+USA_mean <- mean(USA$dem_rep)
+
+Alabama_m <- mean(Alabama$p)
+Alaska_m <- mean(Alaska$p)
+Arizona_m <- mean(Arizona$p)
+Arkansas_m <- mean(Arkansas$p)
+California_m <- mean(California$p)
+Colorado_m <- mean(Colorado$p)
+Connecticut_m <- mean(Connecticut$p)
+Delaware_m <- mean(Delaware$p)
+Florida_m <- mean(Florida$p)
+Georgia_m <- mean(Georgia$p)
+Hawaii_m <- mean(Hawaii$p)
+Idaho_m <- mean(Idaho$p)
+Illinois_m <- mean(Illinois$p)
+Indiana_m <- mean(Indiana$p)
+Iowa_m <- mean(Iowa$p)
+Kansas_m <- mean(Kansas$p)
+Kentucky_m <- mean(Kentucky$p)
+Louisiana_m <- mean(Louisiana$p)
+Maine_m <- mean(Maine$p)
+Maryland_m <- mean(Maryland$p)
+Massachusetts_m <- mean(Massachusetts$p)
+Michigan_m <- mean(Michigan$p)
+Minnesota_m <- mean(Minnesota$p)
+Mississippi_m <- mean(Mississippi$p)
+Missouri_m <- mean(Missouri$p)
+Montana_m <- mean(Montana$p)
+Nebraska_m <- mean(Nebraska$p)
+Nevada_m <- mean(Nevada$p)
+New_Hampshire_m <- mean(New_Hampshire$p)
+New_Jersey_m <- mean(New_Jersey$p)
+New_Mexico_m <- mean(New_Mexico$p)
+New_York_m <- mean(New_York$p)
+North_Carolina_m <- mean(North_Carolina$p)
+North_Dakota_m <- mean(North_Dakota$p)
+Ohio_m <- mean(Ohio$p)
+Oklahoma_m <- mean(Oklahoma$p)
+Oregon_m <- mean(Oregon$p)
+Pennsylvania_m <- mean(Pennsylvania$p)
+Rhode_Island_m <- mean(Rhode_Island$p)
+South_Carolina_m <- mean(South_Carolina$p)
+South_Dakota_m <- mean(South_Dakota$p)
+Tennessee_m <- mean(Tennessee$p)
+Texas_m <- mean(Texas$p)
+Utah_m <- mean(Utah$p)
+Vermont_m <- mean(Vermont$p)
+Virginia_m <- mean(Virginia$p)
+Washington_m <- mean(Washington$p)
+West_Virginia_m <- mean(West_Virginia$p)
+Wisconsin_m <- mean(Wisconsin$p)
+Wyoming_m <- mean(Wyoming$p)
+DC_m <- mean(DC$p)
+USA_m <- mean(USA$p)
+
+### Standard error of each state historical spread 
+
+Alabama_se <- 2 * sqrt(((Alabama_m)*(1 - Alabama_m)) / 12)
+Alaska_se <- 2 * sqrt(((Alaska_m)*(1 - Alaska_m)) / 12)
+Arizona_se <- 2 * sqrt(((Arizona_m)*(1 - Arizona_m)) / 12)
+Arkansas_se <- 2 * sqrt(((Arkansas_m)*(1 - Arkansas_m)) / 12)
+California_se <- 2 * sqrt(((California_m)*(1 - California_m)) / 12)
+Colorado_se <- 2 * sqrt(((Colorado_m)*(1 - Colorado_m)) / 12)
+Connecticut_se <- 2 * sqrt(((Connecticut_m)*(1 - Connecticut_m)) / 12)
+Delaware_se <- 2 * sqrt(((Delaware_m)*(1 - Delaware_m)) / 12)
+Florida_se <- 2 * sqrt(((Florida_m)*(1 - Florida_m)) / 12)
+Georgia_se <- 2 * sqrt(((Georgia_m)*(1 - Georgia_m)) / 12)
+Hawaii_se <- 2 * sqrt(((Hawaii_m)*(1 - Hawaii_m)) / 12)
+Idaho_se <- 2 * sqrt(((Idaho_m)*(1 - Idaho_m)) / 12)
+Illinois_se <- 2 * sqrt(((Illinois_m)*(1 - Illinois_m)) / 12)
+Indiana_se <- 2 * sqrt(((Indiana_m)*(1 - Indiana_m)) / 12)
+Iowa_se <- 2 * sqrt(((Iowa_m)*(1 - Iowa_m)) / 12)
+Kansas_se <- 2 * sqrt(((Kansas_m)*(1 - Kansas_m)) / 12)
+Kentucky_se <- 2 * sqrt(((Kentucky_m)*(1 - Kentucky_m)) / 12)
+Louisiana_se <- 2 * sqrt(((Louisiana_m)*(1 - Louisiana_m)) / 12)
+Maine_se <- 2 * sqrt(((Maine_m)*(1 - Maine_m)) / 12)
+Maryland_se <- 2 * sqrt(((Maryland_m)*(1 - Maryland_m)) / 12)
+Massachusetts_se <- 2 * sqrt(((Massachusetts_m)*(1 - Massachusetts_m)) / 12)
+Michigan_se <- 2 * sqrt(((Michigan_m)*(1 - Michigan_m)) / 12)
+Minnesota_se <- 2 * sqrt(((Minnesota_m)*(1 - Minnesota_m)) / 12)
+Mississippi_se <- 2 * sqrt(((Mississippi_m)*(1 - Mississippi_m)) / 12)
+Missouri_se <- 2 * sqrt(((Missouri_m)*(1 - Missouri_m)) / 12)
+Montana_se <- 2 * sqrt(((Montana_m)*(1 - Montana_m)) / 12)
+Nebraska_se <- 2 * sqrt(((Nebraska_m)*(1 - Nebraska_m)) / 12)
+Nevada_se <- 2 * sqrt(((Nevada_m)*(1 - Nevada_m)) / 12)
+New_Hampshire_se <- 2 * sqrt(((New_Hampshire_m)*(1 - New_Hampshire_m)) / 12)
+New_Jersey_se <- 2 * sqrt(((New_Jersey_m)*(1 - New_Jersey_m)) / 12)
+New_Mexico_se <- 2 * sqrt(((New_Mexico_m)*(1 - New_Mexico_m)) / 12)
+New_York_se <- 2 * sqrt(((New_York_m)*(1 - New_York_m)) / 12)
+North_Carolina_se <- 2 * sqrt(((North_Carolina_m)*(1 - North_Carolina_m)) / 12)
+North_Dakota_se <- 2 * sqrt(((North_Dakota_m)*(1 - North_Dakota_m)) / 12)
+Ohio_se <- 2 * sqrt(((Ohio_m)*(1 - Ohio_m)) / 12)
+Oklahoma_se <- 2 * sqrt(((Oklahoma_m)*(1 - Oklahoma_m)) / 12)
+Oregon_se <- 2 * sqrt(((Oregon_m)*(1 - Oregon_m)) / 12)
+Pennsylvania_se <- 2 * sqrt(((Pennsylvania_m)*(1 - Pennsylvania_m)) / 12)
+Rhode_Island_se <- 2 * sqrt(((Rhode_Island_m)*(1 - Rhode_Island_m)) / 12)
+South_Carolina_se <- 2 * sqrt(((South_Carolina_m)*(1 - South_Carolina_m)) / 12)
+South_Dakota_se <- 2 * sqrt(((South_Dakota_m)*(1 - South_Dakota_m)) / 12)
+Tennessee_se <- 2 * sqrt(((Tennessee_m)*(1 - Tennessee_m)) / 12)
+Texas_se <- 2 * sqrt(((Texas_m)*(1 - Texas_m)) / 12)
+Utah_se <- 2 * sqrt(((Utah_m)*(1 - Utah_m)) / 12)
+Vermont_se <- 2 * sqrt(((Vermont_m)*(1 - Vermont_m)) / 12)
+Virginia_se <- 2 * sqrt(((Virginia_m)*(1 - Virginia_m)) / 12)
+Washington_se <- 2 * sqrt(((Washington_m)*(1 - Washington_m)) / 12)
+West_Virginia_se <- 2 * sqrt(((West_Virginia_m)*(1 - West_Virginia_m)) / 12)
+Wisconsin_se <- 2 * sqrt(((Wisconsin_m)*(1 - Wisconsin_m)) / 12)
+Wyoming_se <- 2 * sqrt(((Wyoming_m)*(1 - Wyoming_m)) / 12)
+DC_se <- 2 * sqrt(((DC_m)*(1 - DC_m)) / 12)
+USA_se <- 2 * sqrt(((USA_m)*(1 - USA_m)) / 12)
+
+
+
+### Same Function for Each state, Using Bayesian statistics   
+
+mu1 <- Alabama_mean
+tau1 <- Alabama_se
+bias_sd <- 0
+avg1 <- Alabama_avg 
+sd1 <- Alabama_sd 
+  Alabama_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 9, 0)) 
+    answer 
+  }
+
+
+
+  mu2 <- Alaska_mean
+  tau2 <- Alaska_se
+  bias_sd <- 0.02
+  avg2 <- Alaska_avg 
+  sd2 <- Alaska_sd 
+  Alaska_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 3, 0)) 
+    answer 
+  }
+  
+  
+  
+  
+  mu3 <- Arizona_mean
+  tau3 <- Arizona_se
+  avg3 <- Arizona_avg 
+  sd3 <- Arizona_sd 
+  Arizona_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 11, 0)) 
+    answer 
+  }
+  
+  
+  
+  
+  
+  mu4 <- Arkansas_mean
+  tau4 <- Arkansas_se
+  avg4 <- Arkansas_avg 
+  sd4 <- Arkansas_sd  
+  Arkansas_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 6, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu5 <- California_mean
+  tau5 <- California_se
+  avg5 <- California_avg 
+  sd5 <- California_sd 
+  California_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 55, 0)) 
+    answer 
+  }
+  
+  
+  
+  
+  mu6 <- Colorado_mean
+  tau6 <- Colorado_se
+  avg6 <- Colorado_avg 
+  sd6 <- Colorado_sd 
+  Colorado_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 9, 0)) 
+    answer  
+  }
+  
+  
+  
+  mu7 <- Connecticut_mean
+  tau7 <- Connecticut_se
+  avg7 <- Connecticut_avg 
+  sd7 <- Connecticut_sd 
+  Connecticut_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 7, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu8 <- Delaware_mean
+  tau8 <- Delaware_se
+  avg8 <- Delaware_avg 
+  sd8 <- Delaware_sd 
+  Delaware_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 3, 0)) 
+    answer 
+  }
+  
+  
+  
+  
+  mu9 <- Florida_mean
+  tau9 <- Florida_se
+  avg9 <- Florida_avg 
+  sd9 <- Florida_sd 
+  Florida_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+    
+    })
+    answer <- ifelse(democrat > 0, 29, 0) 
+    answer 
+  }
+  
+  
+  
+  
+  mu10 <- Georgia_mean
+  tau10 <- Georgia_se
+  avg10 <- Georgia_avg 
+  sd10 <- Georgia_sd 
+  Georgia_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 16, 0)) 
+    answer 
+  }
+  
+  
+  
+  
+  mu11 <- Hawaii_mean
+  tau11 <- Hawaii_se
+  avg11 <- Hawaii_avg 
+  sd11 <- Hawaii_sd 
+  Hawaii_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 4, 0)) 
+    answer  
+  }
+  
+  
+  
+  mu12 <- Idaho_mean
+  tau12 <- Idaho_se
+  avg12 <- Idaho_avg 
+  sd12 <- Idaho_sd 
+  Idaho_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 4, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu13 <- Illinois_mean
+  tau13 <- Illinois_se
+  avg13 <- Illinois_avg 
+  sd13 <- Illinois_sd 
+  Illinois_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 20, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu14 <- Indiana_mean
+  tau14 <- Indiana_se
+  avg14 <- Indiana_avg 
+  sd14 <- Indiana_sd 
+  Indiana_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 11, 0)) 
+    answer 
+  }
+  
+  
+  
+  
+  mu15 <- Iowa_mean
+  tau15<- Iowa_se
+  avg15 <- Iowa_avg 
+  sd15 <- Iowa_sd 
+  Iowa_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 6, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu16 <- Kansas_mean
+  tau16 <- Kansas_se
+  avg16 <- Kansas_avg 
+  sd16 <- Kansas_sd 
+  Kansas_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 6, 0)) 
+    answer 
+  }
+  
+  
+  
+  
+  mu17 <- Kentucky_mean
+  tau17 <- Kentucky_se
+  avg17 <- Kentucky_avg 
+  sd17 <- Kentucky_sd 
+  Kentucky_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 8, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu18 <- Louisiana_mean
+  tau18 <- Louisiana_se
+  avg18 <- Louisiana_avg
+  sd18 <- Louisiana_sd
+  Louisiana_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 8, 0)) 
+    answer 
+  }
+  
+  
+  mu19 <- Maine_mean
+  tau19 <- Maine_se
+  avg19 <- Maine_avg 
+  sd19 <- Maine_sd 
+  Maine_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 4, 0)) 
+    answer 
+  }
+  
+  
+  
+  
+  mu20 <- Maryland_mean
+  tau20 <- Maryland_se
+  avg20 <- Maryland_avg 
+  sd20 <- Maryland_sd 
+  Maryland_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 10, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu21 <- Massachusetts_mean
+  tau21 <- Massachusetts_se
+  avg21 <- Massachusetts_avg 
+  sd21 <- Massachusetts_sd 
+  Massachusetts_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 11, 0)) 
+    answer 
+  }
+  
+  
+  
+  
+  mu22 <- Michigan_mean
+  tau22 <- Michigan_se
+  avg22 <- Michigan_avg 
+  sd22 <- Michigan_sd 
+  Michigan_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 16, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu23 <- Minnesota_mean
+  tau23 <- Minnesota_se
+  avg23 <- Minnesota_avg 
+  sd23 <- Minnesota_sd 
+  Minnesota_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 10, 0)) 
+    answer 
+  }
+  
+  
+  
+  
+  mu24 <- Mississippi_mean
+  tau24 <- Mississippi_se
+  avg24 <- Mississippi_avg 
+  sd24 <- Mississippi_sd 
+  Mississippi_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 6, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu25 <- Missouri_mean
+  tau25 <- Missouri_se
+  avg25 <- Missouri_avg 
+  sd25 <- Missouri_sd 
+  Missouri_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 10, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu26 <- Montana_mean
+  tau26 <- Montana_se
+  avg26 <- Montana_avg 
+  sd26 <- Montana_sd 
+  Montana_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 3, 0)) 
+    answer 
+  }
+  
+  
+  mu27 <- Nebraska_mean
+  tau27 <- Nebraska_se
+  avg27 <- Nebraska_avg 
+  sd27 <- Nebraska_sd 
+  Nebraska_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 5, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu28 <- Nevada_mean
+  tau28 <- Nevada_se
+  avg28 <- Nevada_avg 
+  sd28 <- Nevada_sd 
+  Nevada_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 6, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu29 <- New_Hampshire_mean
+  tau29 <- New_Hampshire_se
+  avg29 <- New_Hampshire_avg 
+  sd29 <- New_Hampshire_sd 
+  New_Hampshire_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 4, 0)) 
+    answer 
+  }
+  
+  
+  
+  
+  mu30 <- New_Jersey_mean
+  tau30 <- New_Jersey_se
+  avg30 <- New_Jersey_avg 
+  sd30 <- New_Jersey_sd 
+  New_Jersey_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 14, 0)) 
+    answer 
+  }
+  
+  
+  
+  
+  mu31 <- New_Mexico_mean
+  tau31 <- New_Mexico_se
+  avg31 <- New_Mexico_avg 
+  sd31 <- New_Mexico_sd 
+  New_Mexico_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 5, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu32 <- New_York_mean
+  tau32 <- New_York_se
+  avg32 <- New_York_avg 
+  sd32 <- New_York_sd 
+  New_York_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 29, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu33 <- North_Carolina_mean
+  tau33 <- North_Carolina_se
+  avg33 <- North_Carolina_avg 
+  sd33 <- North_Carolina_sd 
+  North_Carolina_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 15, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu34 <- North_Dakota_mean
+  tau34 <- North_Dakota_se
+  avg34 <- North_Dakota_avg 
+  sd34 <- North_Dakota_sd 
+  North_Dakota_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 3, 0)) 
+    answer  
+  }
+  
+  
+  
+  mu35 <- Ohio_mean
+  tau35 <- Ohio_se
+  avg35 <- Ohio_avg 
+  sd35 <- Ohio_sd 
+  Ohio_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 18, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu36 <- Oklahoma_mean
+  tau36 <- Oklahoma_se
+  avg36 <- Oklahoma_avg
+  sd36 <- Oklahoma_sd
+  Oklahoma_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 7, 0)) 
+    answer 
+  }
+  
+  
+  
+  mu37 <- Oregon_mean
+  tau37 <- Oregon_se
+  avg37 <- Oregon_avg 
+  sd37 <- Oregon_sd 
+  Oregon_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 7, 0)) 
+    answer 
+  }
+  
+  
+  mu38 <- Pennsylvania_mean
+  tau38 <- Pennsylvania_se
+  avg38 <- Pennsylvania_avg 
+  sd38 <- Pennsylvania_sd 
+  Pennsylvania_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 20, 0)) 
+    answer 
+  }
+  
+  
+  mu39 <- Rhode_Island_mean
+  tau39 <- Rhode_Island_se
+  avg39 <- Rhode_Island_avg 
+  sd39 <- Rhode_Island_sd 
+  Rhode_Island_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+      
+    })
+    answer = (ifelse(democrat > 0, 4, 0)) 
+    answer 
+  }
+  
+
+
+mu40 <- South_Carolina_mean
+tau40 <- South_Carolina_se
+avg40 <- South_Carolina_avg
+  sd40 <- South_Carolina_sd
+  South_Carolina_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0))
+      mean(dem) 
+    })
+    answer = (ifelse(democrat > 0, 9, 0)) 
+    answer 
+  }
+
+
+
+mu41 <- South_Dakota_mean
+tau41 <- South_Dakota_se
+avg41 <- South_Dakota_avg 
+  sd41 <- South_Dakota_sd 
+  South_Dakota_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0))
+      mean(dem) 
+    })
+    answer = (ifelse(democrat > 0, 3, 0)) 
+    answer  
+  }
+
+
+mu42 <- Tennessee_mean
+tau42 <- Tennessee_se
+avg42 <- Tennessee_avg
+  sd42 <- Tennessee_sd
+  Tennessee_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0))
+      mean(dem) 
+    })
+    answer = (ifelse(democrat > 0, 11, 0)) 
+    answer 
+  }
+
+
+
+mu43 <- Texas_mean
+tau43 <- Texas_se
+avg43 <- Texas_avg 
+  sd43 <- Texas_sd 
+  Texas_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0))
+      mean(dem) 
+    })
+    answer = (ifelse(democrat > 0, 38, 0)) 
+    answer 
+  }
+
+
+
+mu44 <- Utah_mean
+tau44 <- Utah_se
+avg44 <- Utah_avg 
+  sd44 <- Utah_sd 
+  Utah_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0))
+      mean(dem) 
+    })
+    answer = (ifelse(democrat > 0, 6, 0)) 
+    answer 
+  }
+
+
+
+mu45 <- Vermont_mean
+tau45 <- Vermont_se
+avg45 <- Vermont_avg 
+  sd45 <- Vermont_sd 
+  Vermont_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0))
+      mean(dem) 
+    })
+    answer = (ifelse(democrat > 0, 3, 0)) 
+    answer  
+  }
+
+
+mu46 <- Virginia_mean
+tau46 <- Virginia_se
+avg46 <- Virginia_avg 
+  sd46 <- Virginia_sd 
+  Virginia_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0))
+      mean(dem) 
+    })
+    answer = (ifelse(democrat > 0, 13, 0)) 
+    answer 
+  }
+
+
+
+mu47 <- Washington_mean
+tau47 <- Washington_se
+avg47 <- Washington_avg 
+  sd47 <- Washington_sd 
+  Washington_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0))
+      mean(dem) 
+    })
+    answer = (ifelse(democrat > 0, 12, 0)) 
+    answer 
+  }
+
+
+
+mu48 <- West_Virginia_mean
+tau48 <- West_Virginia_se
+avg48 <- West_Virginia_avg 
+  sd48 <- West_Virginia_sd 
+  West_Virginia_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0))
+      mean(dem) 
+    })
+    answer = (ifelse(democrat > 0, 5, 0)) 
+    answer 
+  }
+
+
+
+mu49 <- Wisconsin_mean
+tau49 <- Wisconsin_se
+avg49 <- Wisconsin_avg 
+  sd49 <- Wisconsin_sd 
+  Wisconsin_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0))
+      mean(dem) 
+    })
+    answer = (ifelse(democrat > 0, 10, 0))
+    answer
+  }
+
+
+mu50 <- Wyoming_mean
+tau50 <- Wyoming_se
+avg50 <- Wyoming_avg 
+  sd50 <- Wyoming_sd 
+  Wyoming_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+    })
+    answer = (ifelse(democrat > 0, 3, 0)) 
+    answer 
+  }
+
+
+
+mu51 <- DC_mean
+tau51 <- DC_se
+avg51 <- DC_avg 
+  sd51 <- DC_sd 
+  DC_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0)) 
+      mean(dem) 
+    })
+    answer = (ifelse(democrat > 0, 3, 0)) 
+    answer 
+  }
+
+
+
+mu52 <- USA_mean
+tau52 <- USA_se
+avg52 <- USA_avg
+  sd52 <- USA_sd 
+  USA_Outcome <- function(mu, tau, bias_sd, avg, sd){
+    sigma = sqrt(sd^2 + bias_sd^2) 
+    B = ((sigma^2) / (sigma^2 + tau^2)) 
+    posterior_mean = (B*mu + (1-B)*avg) 
+    posterior_se = (sqrt( 1 / ((1/sigma^2) + (1/tau^2))))  
+    democrat <- replicate(10000, {
+      results_beta = (rnorm(1, posterior_mean, posterior_se)) 
+      dem = (ifelse(results_beta > 0, 1, 0))
+      mean(dem) 
+    })
+    answer = (ifelse(democrat > 0, 1, 0)) 
+    answer  
+  }
+  
+  
+### Calculating 10 000 seperate election outcomes 
+
+Alabama <- Alabama_Outcome(mu1, tau1, bias_sd, avg1, sd1)
+Alaska <- Alaska_Outcome(mu2, tau2, bias_sd, avg2, sd2)
+Arizona <- Arizona_Outcome(mu3, tau3, bias_sd, avg3, sd3)
+Arkansas <- Arkansas_Outcome(mu4, tau4, bias_sd, avg4, sd4)
+California <- California_Outcome(mu5, tau5, bias_sd, avg5, sd5)
+Colorado <- Colorado_Outcome(mu6, tau6, bias_sd, avg6, sd6)
+Connecticut <- Connecticut_Outcome(mu7, tau7, bias_sd, avg7, sd7)
+Delaware <- Delaware_Outcome(mu8, tau8, bias_sd, avg8, sd8)
+Florida <- Florida_Outcome(mu9, tau9, bias_sd, avg9, sd9)
+Georgia <- Georgia_Outcome(mu10, tau10, bias_sd, avg10, sd10)
+Hawaii <- Hawaii_Outcome(mu11, tau11, bias_sd, avg11, sd11)
+Idaho <- Idaho_Outcome(mu12, tau12, bias_sd, avg12, sd12)
+Illinois <- Illinois_Outcome(mu13, tau13, bias_sd, avg13, sd13)
+Indiana <- Indiana_Outcome(mu14, tau14, bias_sd, avg14, sd14)
+Iowa <- Iowa_Outcome(mu15, tau15, bias_sd, avg15, sd15)
+Kansas <- Kansas_Outcome(mu16, tau16, bias_sd, avg16, sd16)
+Kentucky <- Kentucky_Outcome(mu17, tau17, bias_sd, avg17, sd17)
+Louisiana <- Louisiana_Outcome(mu18, tau18, bias_sd, avg18, sd18)
+Maine <- Maine_Outcome(mu19, tau19, bias_sd, avg19, sd19)
+Maryland <- Maryland_Outcome(mu20, tau20, bias_sd, avg20, sd20)
+Massachusetts <- Massachusetts_Outcome(mu21, tau21, bias_sd, avg21, sd21)
+Michigan <- Michigan_Outcome(mu22, tau22, bias_sd, avg22, sd22)
+Minnesota <- Minnesota_Outcome(mu23, tau23, bias_sd, avg23, sd23)
+Mississippi <- Mississippi_Outcome(mu24, tau24, bias_sd, avg24, sd24)
+Missouri <- Missouri_Outcome(mu25, tau25, bias_sd, avg25, sd25)
+Montana <- Montana_Outcome(mu26, tau26, bias_sd, avg26, sd26)
+Nebraska <- Nebraska_Outcome(mu27, tau27, bias_sd, avg27, sd27)
+Nevada <- Nevada_Outcome(mu28, tau28, bias_sd, avg28, sd28)
+New_Hampshire <- New_Hampshire_Outcome(mu29, tau29, bias_sd, avg29, sd29)
+New_Jersey <- New_Jersey_Outcome(mu30, tau30, bias_sd, avg30, sd30)
+New_Mexico <- New_Mexico_Outcome(mu31, tau31, bias_sd, avg31, sd31)
+New_York <- New_York_Outcome(mu32, tau32, bias_sd, avg32, sd32)
+North_Carolina <- North_Carolina_Outcome(mu33, tau33, bias_sd, avg33, sd33)
+North_Dakota <- North_Dakota_Outcome(mu34, tau34, bias_sd, avg34, sd34)
+Ohio <- Ohio_Outcome(mu35, tau35, bias_sd, avg35, sd35)
+Oklahoma <- Oklahoma_Outcome(mu36, tau36, bias_sd, avg36, sd36)
+Oregon <- Oregon_Outcome(mu37, tau37, bias_sd, avg37, sd37)
+Pennsylvania <- Pennsylvania_Outcome(mu38, tau38, bias_sd, avg38, sd38)
+Rhode_Island <- Rhode_Island_Outcome(mu39, tau39, bias_sd, avg39, sd39)
+South_Carolina <- South_Carolina_Outcome(mu40, tau40, bias_sd, avg40, sd40)
+South_Dakota <- South_Dakota_Outcome(mu41, tau41, bias_sd, avg41, sd41)
+Tennessee <- Tennessee_Outcome(mu42, tau42, bias_sd, avg42, sd42)
+Texas <- Texas_Outcome(mu43, tau43, bias_sd, avg43, sd43)
+Utah <- Utah_Outcome(mu44, tau44, bias_sd, avg44, sd44)
+Vermont <- Vermont_Outcome(mu45, tau45, bias_sd, avg45, sd45)
+Virginia <- Virginia_Outcome(mu46, tau46, bias_sd, avg46, sd46)
+Washington <- Washington_Outcome(mu47, tau47, bias_sd, avg47, sd47)
+West_Virginia <- West_Virginia_Outcome(mu48, tau48, bias_sd, avg48, sd48)
+Wisconsin <- Wisconsin_Outcome(mu49, tau49, bias_sd, avg49, sd49)
+Wyoming <- Wyoming_Outcome(mu50, tau50, bias_sd, avg50, sd50)
+DC <- DC_Outcome(mu51, tau51, bias_sd, avg51, sd51)
+USA <- USA_Outcome(mu52, tau52, bias_sd, avg52, sd52)
+
+b <- c(1:10000) 
+
+Alabama <- data.frame(b, Alabama)
+Alaska <- data.frame(b, Alaska)
+Arizona <- data.frame(b, Arizona)
+Arkansas <- data.frame(b, Arkansas)
+California <- data.frame(b, California)
+Colorado <- data.frame(b, Colorado)
+Connecticut <- data.frame(b, Connecticut)
+Delaware <- data.frame(b, Delaware)
+Florida <- data.frame(b, Florida)
+Georgia <- data.frame(b, Georgia)
+Hawaii <- data.frame(b, Hawaii)
+Idaho <- data.frame(b, Idaho)
+Illinois <- data.frame(b, Illinois)
+Indiana <- data.frame(b, Indiana)
+Iowa <- data.frame(b, Iowa)
+Kansas <- data.frame(b, Kansas)
+Kentucky <- data.frame(b, Kentucky)
+Louisiana <- data.frame(b, Louisiana)
+Maine <- data.frame(b, Maine)
+Maryland <- data.frame(b, Maryland)
+Massachusetts <- data.frame(b, Massachusetts)
+Michigan <- data.frame(b, Michigan)
+Minnesota <- data.frame(b, Minnesota)
+Mississippi <- data.frame(b, Mississippi)
+Missouri <- data.frame(b, Missouri)
+Montana <- data.frame(b, Montana)
+Nebraska <- data.frame(b, Nebraska)
+Nevada <- data.frame(b, Nevada)
+New_Hampshire <- data.frame(b, New_Hampshire)
+New_Jersey <- data.frame(b, New_Jersey)
+New_Mexico <- data.frame(b, New_Mexico)
+New_York <- data.frame(b, New_York)
+North_Carolina <- data.frame(b, North_Carolina)
+North_Dakota <- data.frame(b, North_Dakota)
+Ohio <- data.frame(b, Ohio)
+Oklahoma <- data.frame(b, Oklahoma)
+Oregon <- data.frame(b, Oregon)
+Pennsylvania <- data.frame(b, Pennsylvania)
+Rhode_Island <- data.frame(b, Rhode_Island)
+South_Carolina <- data.frame(b, South_Carolina)
+South_Dakota <- data.frame(b, South_Dakota)
+Tennessee <- data.frame(b, Tennessee)
+Texas <- data.frame(b, Texas)
+Utah <- data.frame(b, Utah)
+Vermont <- data.frame(b, Vermont)
+Virginia <- data.frame(b, Virginia)
+Washington <- data.frame(b, Washington)
+West_Virginia <- data.frame(b, West_Virginia)
+Wisconsin <- data.frame(b, Wisconsin)
+Wyoming <- data.frame(b, Wyoming)
+DC <- data.frame(b, DC)
+General <- data.frame(b, USA)
+
+
+### Combining all states votes 
+a <-  left_join(Alabama, Alaska, by='b') %>%
+  left_join(., Arizona, by='b') %>% 
+  left_join(., Arkansas, by='b') %>%
+  left_join(., California, by='b') %>% 
+  left_join(., Colorado, by='b') %>%
+  left_join(., Connecticut, by='b') %>% 
+  left_join(., Delaware, by='b') %>%
+  left_join(., Florida, by='b') %>%
+  left_join(., Georgia, by='b') %>% 
+  left_join(., Hawaii, by='b') %>%
+  left_join(., Idaho, by='b') %>% 
+  left_join(., Illinois, by='b') %>%
+  left_join(., Indiana, by='b') %>% 
+  left_join(., Iowa, by='b') %>%
+  left_join(., Kansas, by='b') %>% 
+  left_join(., Kentucky, by='b') %>%
+  left_join(., Louisiana, by='b') %>% 
+  left_join(., Maine, by='b') %>%
+  left_join(., Maryland, by='b') %>% 
+  left_join(., Massachusetts, by='b') %>%
+  left_join(., Michigan, by='b') %>% 
+  left_join(., Minnesota, by='b') %>%
+  left_join(., Mississippi, by='b') %>% 
+  left_join(., Missouri, by='b') %>%
+  left_join(., Montana, by='b') %>% 
+  left_join(., Nebraska, by='b') %>%
+  left_join(., Nevada, by='b') %>% 
+  left_join(., New_Hampshire, by='b') %>%
+  left_join(., New_Jersey, by='b') %>% 
+  left_join(., New_Mexico, by='b') %>%
+  left_join(., New_York, by='b') %>% 
+  left_join(., North_Carolina, by='b') %>%
+  left_join(., North_Dakota, by='b') %>% 
+  left_join(., Ohio, by='b') %>%
+  left_join(., Oklahoma, by='b') %>% 
+  left_join(., Oregon, by='b') %>%
+  left_join(., Pennsylvania, by='b') %>% 
+  left_join(., Rhode_Island, by='b') %>%
+  left_join(., South_Carolina, by='b') %>% 
+  left_join(., South_Dakota, by='b') %>%
+  left_join(., Tennessee, by='b') %>% 
+  left_join(., Texas, by='b') %>%
+  left_join(., Utah, by='b') %>% 
+  left_join(., Vermont, by='b') %>%
+  left_join(., Virginia, by='b') %>% 
+  left_join(., Washington, by='b') %>%
+  left_join(., West_Virginia, by='b') %>% 
+  left_join(., Wisconsin, by='b') %>%
+  left_join(., Wyoming, by='b') %>% 
+  left_join(., DC, by='b') 
+
+simulated_election <- simulated_election[, -1]
+
+a <- simulated_election 
+
+b <- a$Alabama +
+a$Alaska +
+a$Arizona +
+a$Arkansas +
+a$California +
+a$Colorado +
+a$Connecticut +
+a$Delaware +
+a$Florida +
+a$Georgia +
+a$Hawaii +
+a$Idaho +
+a$Illinois +
+a$Indiana +
+a$Iowa +
+a$Kansas +
+a$Kentucky +
+a$Louisiana + 
+a$Maine +
+a$Maryland +
+a$Massachusetts +
+a$Michigan +
+a$Minnesota +
+a$Mississippi +
+a$Missouri +
+a$Montana +
+a$Nebraska +
+a$Nevada +
+a$New_Hampshire +
+a$New_Jersey +
+a$New_Mexico +
+a$New_York +
+a$North_Carolina +
+a$North_Dakota +
+a$Ohio +
+a$Oklahoma +
+a$Oregon +
+a$Pennsylvania +
+a$Rhode_Island +
+a$South_Carolina +
+a$South_Dakota +
+a$Tennessee +
+a$Texas +
+a$Utah +
+a$Vermont +
+a$Virginia +
+a$Washington +
+a$West_Virginia +
+a$Wisconsin +
+a$Wyoming +
+a$DC  
+
+Biden_USA <- sum(b > 270) 
+Biden_Alabama <- sum(a$Alabama > 0) 
+Biden_Alaska <- sum(a$Alaska > 0) 
+Biden_Arizona <- sum(a$Arizona > 0) 
+Biden_Arkansas <- sum(a$Arkansas > 0) 
+Biden_California <- sum(a$California > 0) 
+Biden_Colorado <- sum(a$Colorado > 0) 
+Biden_Connecticut <- sum(a$Connecticut > 0) 
+Biden_Delaware <- sum(a$Delaware > 0) 
+Biden_Florida <- sum(a$Florida > 0) 
+Biden_Georgia <- sum(a$Georgia > 0) 
+Biden_Hawaii <- sum(a$Hawaii > 0) 
+Biden_Idaho <- sum(a$Idaho > 0) 
+Biden_Illinois <- sum(a$Illinois > 0) 
+Biden_Indiana <- sum(a$Indiana > 0) 
+Biden_Iowa <- sum(a$Iowa > 0) 
+Biden_Kansas <- sum(a$Kansas > 0) 
+Biden_Kentucky <- sum(a$Kentucky > 0) 
+Biden_Louisiana <- sum(a$Louisiana > 0) 
+Biden_Maine <- sum(a$Maine > 0) 
+Biden_Maryland <- sum(a$Maryland > 0) 
+Biden_Massachusetts <- sum(a$Massachusetts > 0) 
+Biden_Michigan <- sum(a$Michigan > 0) 
+Biden_Minnesota <- sum(a$Minnesota > 0) 
+Biden_Mississippi <- sum(a$Mississippi > 0) 
+Biden_Missouri <- sum(a$Missouri > 0) 
+Biden_Montana <- sum(a$Montana > 0) 
+Biden_Nebraska <- sum(a$Nebraska > 0) 
+Biden_Nevada <- sum(a$Nevada > 0) 
+Biden_New_Hampshire <- sum(a$New_Hampshire > 0) 
+Biden_New_Jersey <- sum(a$New_Jersey > 0) 
+Biden_New_Mexico <- sum(a$New_Mexico > 0) 
+Biden_New_York <- sum(a$New_York > 0) 
+Biden_North_Carolina <- sum(a$North_Carolina > 0) 
+Biden_North_Dakota <- sum(a$North_Dakota > 0) 
+Biden_Ohio <- sum(a$Ohio > 0) 
+Biden_Oklahoma <- sum(a$Oklahoma > 0) 
+Biden_Oregon <- sum(a$Oregon > 0) 
+Biden_Pennsylvania <- sum(a$Pennsylvania > 0) 
+Biden_Rhode_Island <- sum(a$Rhode_Island > 0) 
+Biden_South_Carolina <- sum(a$South_Carolina > 0)  
+Biden_South_Dakota <- sum(a$South_Dakota > 0) 
+Biden_Tennessee <- sum(a$Tennessee > 0) 
+Biden_Texas <- sum(a$Texas > 0) 
+Biden_Utah <- sum(a$Utah > 0) 
+Biden_Vermont <- sum(a$Vermont > 0) 
+Biden_Virginia <- sum(a$Virginia > 0) 
+Biden_Washington <- sum(a$Washington > 0) 
+Biden_West_Virginia <- sum(a$West_Virginia > 0) 
+Biden_Wisconsin <- sum(a$Wisconsin > 0) 
+Biden_Wyoming <- sum(a$Wyoming > 0) 
+Biden_DC <- sum(a$DC > 0) 
+Biden_General <- sum(General$USA > 0)
+
+
+
+
+Biden_Alabama
+Biden_Alaska
+Biden_Arizona
+Biden_Arkansas
+Biden_California
+Biden_Colorado
+Biden_Connecticut
+Biden_Delaware
+Biden_Florida
+Biden_Georgia
+Biden_Hawaii
+Biden_Idaho
+Biden_Illinois
+Biden_Indiana
+Biden_Iowa
+Biden_Kansas
+Biden_Kentucky
+Biden_Louisiana 
+Biden_Maine
+Biden_Maryland
+Biden_Massachusetts
+Biden_Michigan
+Biden_Minnesota
+Biden_Mississippi
+Biden_Missouri
+Biden_Montana
+Biden_Nebraska
+Biden_Nevada
+Biden_New_Hampshire
+Biden_New_Jersey
+Biden_New_Mexico
+Biden_New_York
+Biden_North_Carolina
+Biden_North_Dakota
+Biden_Ohio
+Biden_Oklahoma
+Biden_Oregon
+Biden_Pennsylvania
+Biden_Rhode_Island
+Biden_South_Carolina
+Biden_South_Dakota
+Biden_Tennessee
+Biden_Texas
+Biden_Utah
+Biden_Vermont
+Biden_Virginia
+Biden_Washington
+Biden_West_Virginia
+Biden_Wisconsin
+Biden_Wyoming
+Biden_DC 
+Biden_USA 
+Biden_General
+
+Biden_Wins <- c(Biden_Alabama,
+                Biden_Alaska,
+                Biden_Arizona,
+                Biden_Arkansas,
+                Biden_California,
+                Biden_Colorado,
+                Biden_Connecticut,
+                Biden_Delaware,
+                Biden_Florida,
+                Biden_Georgia,
+                Biden_Hawaii,
+                Biden_Idaho,
+                Biden_Illinois,
+                Biden_Indiana,
+                Biden_Iowa,
+                Biden_Kansas,
+                Biden_Kentucky,
+                Biden_Louisiana, 
+                Biden_Maine,
+                Biden_Maryland,
+                Biden_Massachusetts,
+                Biden_Michigan,
+                Biden_Minnesota,
+                Biden_Mississippi,
+                Biden_Missouri,
+                Biden_Montana,
+                Biden_Nebraska,
+                Biden_Nevada,
+                Biden_New_Hampshire,
+                Biden_New_Jersey,
+                Biden_New_Mexico,
+                Biden_New_York,
+                Biden_North_Carolina,
+                Biden_North_Dakota,
+                Biden_Ohio,
+                Biden_Oklahoma,
+                Biden_Oregon,
+                Biden_Pennsylvania,
+                Biden_Rhode_Island,
+                Biden_South_Carolina,
+                Biden_South_Dakota,
+                Biden_Tennessee,
+                Biden_Texas,
+                Biden_Utah,
+                Biden_Vermont,
+                Biden_Virginia,
+                Biden_Washington,
+                Biden_West_Virginia,
+                Biden_Wisconsin,
+                Biden_Wyoming)
+
+### DC not included assumed to vote for Biden 
+
+state_name <- c(state.name)
+sequence <- c(1:50) 
+Num_Biden_Wins <- data.frame(state_name, Biden_Wins, sequence) 
+
+
+
+Num_Biden_Wins %>% 
+ggplot(aes(state_name , Biden_Wins)) + 
+geom_bar(stat='identity')
+
+Num_Biden_Wins$sequence <- ifelse(Biden_Wins >= 7500, "Safe Blue 75% Win and Above",
+                     ifelse(Biden_Wins >= 5000 & Biden_Wins < 7500, "Likely Blue 50% - 75% Win",
+                            ifelse(Biden_Wins >= 2500 & Biden_Wins < 5000, "Likely Red 50% - 75% Win",
+                                   ifelse(Biden_Wins < 2500, "Safe Red 75% Win and Above", ""))))
+
+png(filename = "output.png", width=480,height=1200,bg = "white")
+grid.table(Num_Biden_Wins) 
+dev.off()
